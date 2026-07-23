@@ -1,0 +1,17 @@
+2026-07-23 14:12:27 [example_dotenv.py]
+Values in D:\data_...\y3nda\project_test\.env:
+  key1=123
+
+---
+
+
+2026-07-23 14:25:46 [example_menu.py]
+
+.env menu
+Load .env
+Show loaded values
+Add or change a value
+Write values to .env
+Exit
+Loaded 1 value(s).
+
