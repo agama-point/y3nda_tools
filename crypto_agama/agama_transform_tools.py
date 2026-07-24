@@ -116,6 +116,41 @@ def num_to_hex(num):
    return ret
 
 
+def num_to_dice(num: int, length: int) -> str:
+    """Encode a non-negative number as dice rolls, using digits 1 through 6.
+
+    The number is first represented in base 6 and padded to at least
+    ``length`` digits.  Each base-6 digit is increased by one, so ``0`` maps
+    to die face ``1`` and ``5`` maps to die face ``6``.
+    """
+
+    if isinstance(num, bool) or not isinstance(num, int) or num < 0:
+        raise ValueError("num must be a non-negative integer")
+    if isinstance(length, bool) or not isinstance(length, int) or length < 0:
+        raise ValueError("length must be a non-negative integer")
+
+    base6_digits = []
+    remaining = num
+    if remaining == 0:
+        base6_digits.append("0")
+    else:
+        while remaining:
+            remaining, digit = divmod(remaining, 6)
+            base6_digits.append(str(digit))
+        base6_digits.reverse()
+    base6 = "".join(base6_digits).rjust(length, "0")
+    return "".join(str(int(digit) + 1) for digit in base6)
+
+
+def dice_to_num(dice: str) -> int:
+    """Decode a non-empty dice-roll string (digits 1--6) into an integer."""
+
+    if not isinstance(dice, str) or not dice or any(face not in "123456" for face in dice):
+        raise ValueError("dice must be a non-empty string containing only digits 1 through 6")
+
+    return int("".join(str(int(face) - 1) for face in dice), 6)
+
+
 def hex_to_num(hex):
     return int(hex, 16)
 

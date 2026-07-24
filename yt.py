@@ -12,9 +12,8 @@ import re
 import sys
 from pathlib import Path
 
-from dotenv import dotenv_values
-
 from crypto_agama.agama_cipher import caesar_encrypt, p1, polybius_decrypt, toggle_xor
+from crypto_agama.agama_mnemonic import MNEMONIC_WORD_COLUMN_WIDTH, bip, cip, slip
 from crypto_agama.agama_transform_tools import (
     ASCII_LETTERS_RE,
     convert_to_base58,
@@ -23,6 +22,8 @@ from crypto_agama.agama_transform_tools import (
     is_hex_text,
     is_valid_hex,
     num_to_bech,
+    num_to_dice,
+    num_to_hex,
     str_to_hex,
     to_leet_speak,
 )
@@ -66,6 +67,12 @@ def parse_args() -> argparse.Namespace:
         "--all",
         action="store_true",
         help="Try all applicable conversions on STRING or the project's data.txt.",
+    )
+    parser.add_argument(
+        "-m",
+        "--mnemonic",
+        metavar="STRING",
+        help="Look up a CIP, SLIP-0039, or BIP-0039 mnemonic word or zero-based index.",
     )
     parser.add_argument(
         "--config",
@@ -124,6 +131,11 @@ def read_data(data_path: Path) -> str:
 def get_xor_key(env_path: Path) -> str:
     """Load and validate ``XEY_HEX`` from the configured project's .env."""
 
+    try:
+        from dotenv import dotenv_values
+    except ImportError as error:
+        raise ValueError("XOR operations require the python-dotenv package") from error
+
     if not env_path.is_file():
         raise ValueError(f"No .env file found: {env_path}")
 
@@ -166,8 +178,48 @@ def print_all_conversions(value: str, hex_key: str) -> None:
     print_conversion(terminal, "ASCII", text_hex)
 
 
+def print_mnemonic_lookup(value: str) -> None:
+    """Print mnemonic matches for a word or a non-negative decimal index.
+
+    Word matches show a zero-based index and its fixed-width binary encoding:
+    4 bits for CIP, 10 for SLIP-0039, and 11 for BIP-0039.  Numeric input
+    shows the corresponding word, or ``-`` when that index is unavailable.
+    """
+
+    lookups = (("CIP", cip, 4), ("SLIP", slip, 10), ("BIP", bip, 11))
+    numeric_match = re.fullmatch(r"[+-]?\d+", value.strip())
+    lookup_value: int | str = int(value) if numeric_match else value
+    terminal = Terminal()
+
+    for label, lookup, bit_width in lookups:
+        try:
+            result = lookup(lookup_value)
+        except (IndexError, ValueError):
+            result = "-"
+        else:
+            if isinstance(lookup_value, str):
+                result = f"{result}  {terminal.color('y', f'{result:0{bit_width}b}')}"
+            else:
+                result = f"{result:<{MNEMONIC_WORD_COLUMN_WIDTH}}{terminal.color('y', f'{lookup_value:0{bit_width}b}')}"
+        print_conversion(terminal, label, result)
+
+    if isinstance(lookup_value, int):
+        if lookup_value < 0:
+            print_conversion(terminal, "HEX", "-")
+            print_conversion(terminal, "BECH32", "-")
+            print_conversion(terminal, "DICE", "-")
+        else:
+            print_conversion(terminal, "HEX", num_to_hex(lookup_value)[2:])
+            print_conversion(terminal, "BECH32", num_to_bech(lookup_value).upper())
+            print_conversion(terminal, "DICE", num_to_dice(lookup_value, 5))
+
+
 def main() -> int:
     args = parse_args()
+    if args.mnemonic is not None:
+        print_mnemonic_lookup(args.mnemonic)
+        return 0
+
     try:
         config = load_config(args.config)
         project_directory = get_project_directory(PROJECT_ROOT, config)
