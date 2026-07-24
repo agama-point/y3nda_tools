@@ -8,12 +8,13 @@ really intended.
 
 import argparse
 import json
+import re
 import sys
 from pathlib import Path
 
 from dotenv import dotenv_values
 
-from crypto_agama.agama_cipher import caesar_encrypt, toggle_xor
+from crypto_agama.agama_cipher import caesar_encrypt, p1, polybius_decrypt, toggle_xor
 from crypto_agama.agama_transform_tools import (
     ASCII_LETTERS_RE,
     convert_to_base58,
@@ -23,6 +24,7 @@ from crypto_agama.agama_transform_tools import (
     is_valid_hex,
     num_to_bech,
     str_to_hex,
+    to_leet_speak,
 )
 from lib.terminal import Terminal
 from lib.wrapp_log import console_log, get_project_directory, load_config
@@ -30,19 +32,22 @@ from lib.wrapp_log import console_log, get_project_directory, load_config
 
 PROJECT_ROOT = Path(__file__).resolve().parent
 RESULT_LABEL_WIDTH = 8
+POLYBIUS_TEXT_RE = re.compile(r"^[A-Za-z]+$")
+POLYBIUS_NUMBERS_RE = re.compile(r"^[1-5]{2}(?:\s+[1-5]{2})*$")
+POLYBIUS_LETTERS = {coordinates: letter for letter, coordinates in p1.items()}
 
 
 def parse_args() -> argparse.Namespace:
     """Parse command-line options while allowing ``-status`` on its own."""
 
     parser = argparse.ArgumentParser(
-        description="Transform project text with the XOR or ROT13 cipher.",
+        description="Transform project text with the XOR, ROT13, Polybius, or leet cipher.",
     )
     parser.add_argument(
         "-c",
         "--cipher",
-        choices=("xor", "rot13"),
-        help="Cipher to use: xor or rot13.",
+        choices=("xor", "rot13", "polybius", "leet"),
+        help="Cipher to use: xor, rot13, polybius, or leet.",
     )
     parser.add_argument(
         "text",
@@ -80,6 +85,29 @@ def rot13(text: str) -> str:
     """
 
     return ASCII_LETTERS_RE.sub(lambda match: caesar_encrypt(match.group(), 13), text)
+
+
+def polybius_transform(value: str) -> str:
+    """Encode letters or decode space-separated Polybius coordinates.
+
+    Text input such as ``agama`` is encoded through ``polybius_decrypt``.
+    Coordinates such as ``11 22 11 32 11`` are decoded to uppercase text.
+    """
+
+    value = value.strip()
+    if POLYBIUS_NUMBERS_RE.fullmatch(value):
+        return "".join(POLYBIUS_LETTERS[coordinate] for coordinate in value.split())
+    if POLYBIUS_TEXT_RE.fullmatch(value):
+        return polybius_decrypt(value)
+    raise ValueError(
+        "Polybius input must be letters, or two-digit coordinates 11–55 separated by spaces."
+    )
+
+
+def leet_transform(value: str) -> str:
+    """Convert text with the full leetspeak mapping."""
+
+    return to_leet_speak(value, 3)
 
 
 def read_data(data_path: Path) -> str:
@@ -124,7 +152,7 @@ def print_all_conversions(value: str, hex_key: str) -> None:
         print_conversion(terminal, "Input", "hexadecimal")
         print_conversion(terminal, "XOR", toggle_xor(value, hex_key))
         print_conversion(terminal, "Number", hex_to_num(trimmed))
-        print_conversion(terminal, "Binary", f"0b{binary_text}")
+        # print_conversion(terminal, "Binary", f"0b{binary_text}")
         print_conversion(terminal, "Bin str", binary_text)
         return
 
@@ -159,9 +187,16 @@ def main() -> int:
                 print_all_conversions(input_text, get_xor_key(project_directory / ".env"))
                 return 0
             if args.cipher is None:
-                print("Error: specify -c xor or -c rot13 (or use -a/-s).", file=sys.stderr)
+                print("Error: specify -c xor, -c rot13, -c polybius, or -c leet (or use -a/-s).", file=sys.stderr)
                 return 2
-            result = toggle_xor(input_text, get_xor_key(project_directory / ".env")) if args.cipher == "xor" else rot13(input_text)
+            if args.cipher == "xor":
+                result = toggle_xor(input_text, get_xor_key(project_directory / ".env"))
+            elif args.cipher == "rot13":
+                result = rot13(input_text)
+            elif args.cipher == "polybius":
+                result = polybius_transform(input_text)
+            else:
+                result = leet_transform(input_text)
         except ValueError as error:
             print(f"Error: {error}", file=sys.stderr)
             return 1
