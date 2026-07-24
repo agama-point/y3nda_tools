@@ -1,10 +1,8 @@
 """Portable, dependency-free terminal colors for small command-line tools."""
 
-from __future__ import annotations
-
 import os
 import sys
-from typing import TextIO
+from typing import Optional, TextIO
 
 RESET = "\033[0m"
 COLORS = {
@@ -36,7 +34,7 @@ def _enable_windows_ansi(stream: TextIO) -> bool:
         return False
 
 
-def colors_enabled(stream: TextIO | None = None) -> bool:
+def colors_enabled(stream: Optional[TextIO] = None) -> bool:
     """Return whether ANSI colors should be used for the selected stream."""
 
     output = stream or sys.stdout
@@ -45,7 +43,7 @@ def colors_enabled(stream: TextIO | None = None) -> bool:
     return _enable_windows_ansi(output)
 
 
-def color_text(text: object, color: str, *, enabled: bool | None = None) -> str:
+def color_text(text: object, color: str, *, enabled: Optional[bool] = None) -> str:
     """Return text in the requested color, or plain text when colors are disabled."""
 
     if color not in COLORS:
@@ -58,7 +56,7 @@ def color_text(text: object, color: str, *, enabled: bool | None = None) -> str:
 class Terminal:
     """Print colored terminal text through short color methods."""
 
-    def __init__(self, file: TextIO | None = None) -> None:
+    def __init__(self, file: Optional[TextIO] = None) -> None:
         self._file = file
 
     def print(

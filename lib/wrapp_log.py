@@ -6,7 +6,7 @@ import sys
 from contextlib import contextmanager
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Iterator, TextIO
+from typing import Any, Dict, Iterator, TextIO
 
 
 ANSI_ESCAPE = re.compile(r"\x1b\[[0-?]*[ -/]*[@-~]")
@@ -35,7 +35,7 @@ class _Tee:
         return getattr(self._stream, name)
 
 
-def load_config(config_path: Path) -> dict[str, object]:
+def load_config(config_path: Path) -> Dict[str, object]:
     """Read and validate the small y3nda JSON configuration."""
 
     try:
@@ -59,7 +59,7 @@ def load_config(config_path: Path) -> dict[str, object]:
     return data
 
 
-def get_project_directory(project_root: Path, config: dict[str, object]) -> Path:
+def get_project_directory(project_root: Path, config: Dict[str, object]) -> Path:
     """Resolve the configured project directory and keep it inside the project."""
 
     subdir = Path(str(config["subdir"]))

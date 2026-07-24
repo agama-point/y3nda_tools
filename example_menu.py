@@ -4,6 +4,7 @@ import argparse
 import re
 import sys
 from pathlib import Path
+from typing import Dict
 
 from dotenv import dotenv_values, set_key
 
@@ -30,7 +31,7 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def load_values(env_path: Path, t: Terminal) -> dict[str, str]:
+def load_values(env_path: Path, t: Terminal) -> Dict[str, str]:
     if not env_path.exists():
         t.y(f"No .env file yet: {env_path}")
         return {}
@@ -38,7 +39,7 @@ def load_values(env_path: Path, t: Terminal) -> dict[str, str]:
     return {key: value or "" for key, value in values.items()}
 
 
-def show_values(values: dict[str, str], t: Terminal) -> None:
+def show_values(values: Dict[str, str], t: Terminal) -> None:
     if not values:
         t.y("No values loaded.")
         return
@@ -46,7 +47,7 @@ def show_values(values: dict[str, str], t: Terminal) -> None:
         print(f"{key}={values[key]}")
 
 
-def save_values(env_path: Path, values: dict[str, str], t: Terminal) -> None:
+def save_values(env_path: Path, values: Dict[str, str], t: Terminal) -> None:
     env_path.parent.mkdir(parents=True, exist_ok=True)
     env_path.touch(exist_ok=True)
     for key, value in values.items():
@@ -56,7 +57,7 @@ def save_values(env_path: Path, values: dict[str, str], t: Terminal) -> None:
 
 def run_menu(env_path: Path) -> int:
     t = Terminal()
-    values: dict[str, str] = {}
+    values = {}  # type: Dict[str, str]
 
     while True:
         print("\n" + "-" * 32)

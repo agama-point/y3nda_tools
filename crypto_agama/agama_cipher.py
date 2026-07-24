@@ -151,6 +151,12 @@ def simple_xor(data,key): # simple XOR
     return hex(result)[2:].zfill(len(data))
 
 
+def xor_crypt(data, key):
+   """Backward-compatible name for the hexadecimal XOR helper."""
+
+   return simple_xor(data, key)
+
+
 def xor_bytes(source, key):
    """XOR bytes with a repeatedly applied, non-empty key."""
 
@@ -230,7 +236,14 @@ class Agama_fernet:
       if nostr:
          if isinstance(key, bytes):
             key = key.decode("ascii")
-         key = base64.urlsafe_b64encode(bytes.fromhex(key))
+         key_bytes = bytes.fromhex(key)
+         # A raw 32-byte Nostr key needs Fernet's base64 representation.
+         # Also accept the hexadecimal representation of an existing Fernet
+         # key, which was supported by the original helper's callers.
+         if len(key_bytes) == 44:
+            key = key_bytes
+         else:
+            key = base64.urlsafe_b64encode(key_bytes)
       elif isinstance(key, str):
          key = key.encode("ascii")
 

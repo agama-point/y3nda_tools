@@ -1,0 +1,9 @@
+# Display the configured project settings.
+python yt.py --status
+
+# ROT13 preserves the Czech text's punctuation and non-ASCII characters.
+python yt.py -c rot13 "Ahoj agamo!"
+
+# Polybius: letters encode to coordinates; coordinates decode to uppercase text.
+python yt.py -c polybius agama
+python yt.py -c polybius "11 22 11 32 11"
