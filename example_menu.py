@@ -1,7 +1,5 @@
 """A minimal interactive menu for reading and saving a .env file."""
 
-from __future__ import annotations
-
 import argparse
 import re
 import sys

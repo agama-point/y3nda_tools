@@ -1,7 +1,5 @@
 """Print the y3nda configuration and optionally mirror output to a log file."""
 
-from __future__ import annotations
-
 import argparse
 import json
 import sys

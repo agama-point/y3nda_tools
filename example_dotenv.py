@@ -1,7 +1,5 @@
 """Load and display values from a .env file with python-dotenv."""
 
-from __future__ import annotations
-
 import argparse
 import sys
 from pathlib import Path
