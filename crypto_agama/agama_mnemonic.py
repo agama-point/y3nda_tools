@@ -5,16 +5,14 @@ All indexes are zero-based: ``bip(0)`` is ``"abandon"`` and
 specifications and makes CIP's first word, ``amber``, index 0 as well.
 """
 
-from __future__ import annotations
-
 from pathlib import Path
-from typing import Final
+from typing import Tuple, Union
 
 
-_ASSETS_DIR: Final = Path(__file__).with_name("assets")
+_ASSETS_DIR = Path(__file__).with_name("assets")
 
 
-def _load_word_list(filename: str, expected_length: int) -> tuple[str, ...]:
+def _load_word_list(filename: str, expected_length: int) -> Tuple[str, ...]:
     """Load and validate a whitespace-delimited word list shipped with this package."""
     words = tuple((_ASSETS_DIR / filename).read_text(encoding="utf-8").split())
     if len(words) != expected_length or len(set(words)) != expected_length:
@@ -22,15 +20,15 @@ def _load_word_list(filename: str, expected_length: int) -> tuple[str, ...]:
     return words
 
 
-_CIP_WORDS: Final = _load_word_list("cip.txt", 16)
-_BIP_WORDS: Final = _load_word_list("bip.txt", 2048)
-_SLIP_WORDS: Final = _load_word_list("slip.txt", 1024)
-MNEMONIC_WORD_COLUMN_WIDTH: Final = max(
+_CIP_WORDS = _load_word_list("cip.txt", 16)
+_BIP_WORDS = _load_word_list("bip.txt", 2048)
+_SLIP_WORDS = _load_word_list("slip.txt", 1024)
+MNEMONIC_WORD_COLUMN_WIDTH = max(
     len(word) for word_list in (_CIP_WORDS, _BIP_WORDS, _SLIP_WORDS) for word in word_list
 ) + 2
 
 
-def _lookup(value: int | str, words: tuple[str, ...]) -> str | int:
+def _lookup(value: Union[int, str], words: Tuple[str, ...]) -> Union[str, int]:
     """Return a word for a zero-based index, or its zero-based index for a word."""
     if isinstance(value, bool):
         raise TypeError("Mnemonic lookup accepts an integer index or a word string, not bool")
@@ -47,16 +45,16 @@ def _lookup(value: int | str, words: tuple[str, ...]) -> str | int:
     raise TypeError("Mnemonic lookup accepts an integer index or a word string")
 
 
-def cip(value: int | str) -> str | int:
+def cip(value: Union[int, str]) -> Union[str, int]:
     """Look up a CIP word or its zero-based index (valid indexes: 0--15)."""
     return _lookup(value, _CIP_WORDS)
 
 
-def bip(value: int | str) -> str | int:
+def bip(value: Union[int, str]) -> Union[str, int]:
     """Look up a BIP-0039 word or its zero-based index (valid indexes: 0--2047)."""
     return _lookup(value, _BIP_WORDS)
 
 
-def slip(value: int | str) -> str | int:
+def slip(value: Union[int, str]) -> Union[str, int]:
     """Look up a SLIP-0039 word or its zero-based index (valid indexes: 0--1023)."""
     return _lookup(value, _SLIP_WORDS)

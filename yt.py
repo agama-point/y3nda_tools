@@ -4,6 +4,8 @@ The command reads the project subdirectory from ``y3nda_config.json`` and
 prints the transformed value.  It deliberately does not overwrite
 ``data.txt``: redirect its output or copy the result there only when that is
 really intended.
+
+Compatible with Python 3.6 and newer.
 """
 
 import argparse
@@ -32,6 +34,7 @@ from lib.wrapp_log import console_log, get_project_directory, load_config
 
 
 PROJECT_ROOT = Path(__file__).resolve().parent
+__version__ = "0.2"
 RESULT_LABEL_WIDTH = 8
 POLYBIUS_TEXT_RE = re.compile(r"^[A-Za-z]+$")
 POLYBIUS_NUMBERS_RE = re.compile(r"^[1-5]{2}(?:\s+[1-5]{2})*$")
@@ -43,6 +46,13 @@ def parse_args() -> argparse.Namespace:
 
     parser = argparse.ArgumentParser(
         description="Transform project text with the XOR, ROT13, Polybius, or leet cipher.",
+    )
+    parser.add_argument(
+        "-v",
+        "--ver",
+        "--version",
+        action="version",
+        version="%(prog)s {0} (Python 3.6+)".format(__version__),
     )
     parser.add_argument(
         "-c",
@@ -188,7 +198,7 @@ def print_mnemonic_lookup(value: str) -> None:
 
     lookups = (("CIP", cip, 4), ("SLIP", slip, 10), ("BIP", bip, 11))
     numeric_match = re.fullmatch(r"[+-]?\d+", value.strip())
-    lookup_value: int | str = int(value) if numeric_match else value
+    lookup_value = int(value) if numeric_match else value
     terminal = Terminal()
 
     for label, lookup, bit_width in lookups:
