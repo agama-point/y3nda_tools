@@ -1,2 +1,7 @@
 ﻿python-dotenv
+cryptos
+cryptography
+base58
+bech32
+
 
