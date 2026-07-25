@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import Any, Dict, Iterator, TextIO
 
 
-__version__ = "0.25.12"
+__version__ = "0.26.02"
 
 
 ANSI_ESCAPE = re.compile(r"\x1b\[[0-?]*[ -/]*[@-~]")
@@ -38,18 +38,25 @@ class _Tee:
         return getattr(self._stream, name)
 
 
+def load_json_object(path: Path) -> Dict[str, object]:
+    """Read a JSON object from ``path`` with command-line friendly errors."""
+
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except OSError as error:
+        raise ValueError(f"Cannot read configuration {path}: {error}") from error
+    except json.JSONDecodeError as error:
+        raise ValueError(f"Configuration is not valid JSON: {path}: {error}") from error
+
+    if not isinstance(data, dict):
+        raise ValueError(f"Configuration must contain a JSON object: {path}")
+    return data
+
+
 def load_config(config_path: Path) -> Dict[str, object]:
     """Read and validate the small y3nda JSON configuration."""
 
-    try:
-        data = json.loads(config_path.read_text(encoding="utf-8"))
-    except OSError as error:
-        raise ValueError(f"Cannot read configuration {config_path}: {error}") from error
-    except json.JSONDecodeError as error:
-        raise ValueError(f"Configuration is not valid JSON: {config_path}: {error}") from error
-
-    if not isinstance(data, dict):
-        raise ValueError(f"Configuration must contain a JSON object: {config_path}")
+    data = load_json_object(config_path)
 
     subdir = data.get("subdir")
     if not isinstance(subdir, str) or not subdir.strip():
