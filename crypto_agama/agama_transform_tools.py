@@ -16,7 +16,7 @@ except ImportError:
 # import string
 
 
-__version__ = "0.23.09"
+__version__ = "0.25.01"
 
 DEBUG = False
 
@@ -453,13 +453,13 @@ def to_leet_speak(text, pwr):
 
     if pwr == 1:
         leet_dict = leet_dict_1
-        probability = 0.3
+        probability = 0.5
     elif pwr == 2:
         leet_dict = leet_dict_2
-        probability = 0.6
+        probability = 0.9
     else:  # pwr == 3
         leet_dict = leet_dict_3
-        probability = 1.0
+        probability = 0.5
 
     leet_text = []
     for char in text:
