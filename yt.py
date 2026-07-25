@@ -35,7 +35,9 @@ from crypto_agama.agama_transform_tools import (
 )
 from crypto_agama.agama_transform_tools import __version__ as AGAMA_TRANSFORM_TOOLS_VERSION
 from lib.wrapp_terminal import Terminal
-from lib.wrapp_terminal import __version__ as TERMINAL_VERSION
+from lib.wrapp_terminal import __version__ as WRAPP_TERMINAL_VERSION
+from lib.wrapp_network import print_network_info
+from lib.wrapp_network import __version__ as WRAPP_NETWORK_VERSION
 from lib.wrapp_log import console_log, get_project_directory, load_config
 from lib.wrapp_log import __version__ as WRAPP_LOG_VERSION
 from lib.wrapp_run import FlowError, FlowRunner
@@ -54,7 +56,8 @@ MODULE_VERSIONS = (
     ("agama_cipher", AGAMA_CIPHER_VERSION),
     ("wrapp_log", WRAPP_LOG_VERSION),
     ("wrapp_run", WRAPP_RUN_VERSION),
-    ("terminal", TERMINAL_VERSION),
+    ("wrapp_terminal", WRAPP_TERMINAL_VERSION),
+    ("wrapp_network", WRAPP_NETWORK_VERSION),
 )
 VERSION_LABEL_WIDTH = max(len(name) for name, _version in MODULE_VERSIONS) + 1
 
@@ -123,6 +126,12 @@ def parse_args() -> argparse.Namespace:
         "--mnemonic",
         metavar="STRING",
         help="Look up a CIP, SLIP-0039, or BIP-0039 mnemonic word or zero-based index.",
+    )
+    parser.add_argument(
+        "-n",
+        "--net",
+        action="store_true",
+        help="Show local IPv4, HTTPS internet access, and one ping to 8.8.8.8.",
     )
     parser.add_argument(
         "-r",
@@ -277,6 +286,9 @@ def main() -> int:
     args = parse_args()
     if args.mnemonic is not None:
         print_mnemonic_lookup(args.mnemonic)
+        return 0
+    if args.net:
+        print_network_info()
         return 0
 
     try:
