@@ -16,7 +16,7 @@ except ImportError:
 # import string
 
 
-__version__ = "0.5.3" # 2024/12
+__version__ = "0.23.09"
 
 DEBUG = False
 
@@ -61,17 +61,12 @@ hashhex = hash_sha256_str("agama")
 hashnum = int(hashhex, 16)
 convert_to_base58(hashnum) # '6YSp1VMaYGo5enJRFFwhhcNmrhGWPmJgSZqiS2sv3fwQ'
 
-num_to_wif | wif_to_num | is_valid_wif
-seed_words | num_to_address
 
 ---- adv arr
 bin_arr_from_str(string, 32, False)     # bin_data32 arr from ascii str latin1
 bin_data = bin_arr_from_str(string, 64) # bin_data64 str\n
 
---- wif
-key1 = "0000000000000000000000000000000000000000000000000000000000000001" #64
-wif_key = hex_to_wif(key1) # 5HpHagT65TZzG1PH3CSu63k8DbpvD8s5ip4nEB3kEsreAnchuDf
-wif_to_private_key(wif_key) # > ... 1 (hex)
+
 """
 
 BASE_58_CHARS = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz'
@@ -549,74 +544,6 @@ def bin_normalize8(bin_str):
     if DEBUG: print("remainder",remainder)
     pattern += "0" * (7 - remainder) if remainder != 0 else ""
     return pattern
-
-
-# --- wif 23 # prefix ver, 0x80 for Bitcoin Mainnet
-def hex_to_wif(hex_str, ver_prefix="80", compressed=False):
-    extended_key_hex = ver_prefix + hex_str 
-    if compressed: # if compressed, add '01'
-        extended_key_hex += "01"
-    
-    extended_key_bytes = bytes.fromhex(extended_key_hex)
-    
-    # double SHA-256 for checksum
-    hash1 = sha256(extended_key_bytes).digest()
-    hash2 = sha256(hash1).digest()
-    
-    checksum = hash2[:4] # first 4 Byte
-    final_key_bytes = extended_key_bytes + checksum
-    wif_key = base58.b58encode(final_key_bytes).decode()
-    
-    return wif_key
-
-
-t = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz'
-def wif_to_num(wif):
-    return sum([t.index(wif[::-1][l]) * (58 ** l) for l in range(len(wif))]) // (2 ** 32) % (2 ** 256)
-
-
-def wif_to_private_key(wif):
-    wif_bytes = base58.b58decode(wif)
-    # Odstranění první a posledních 4 bajtů (ver + checksum)
-    private_key_with_prefix = wif_bytes[:-4]
-
-    if len(private_key_with_prefix) == 34: # Pokud klíč obsahuje příznak komprese, je odstraněn poslední B
-        private_key = private_key_with_prefix[1:-1]
-    else:
-        private_key = private_key_with_prefix[1:]
-    return private_key
-
-
-def generate_bitcoin_address1(private_key_bytes, compressed=False):
-    # Generate the public key using ecdsa (secp256k1)
-    if ecdsa is None:
-        raise ImportError("generate_bitcoin_address1 requires the optional 'ecdsa' package")
-    sk = ecdsa.SigningKey.from_string(private_key_bytes, curve=ecdsa.SECP256k1)
-    vk = sk.verifying_key
-    
-    # Depending on whether the key is compressed or not, prepare the public key bytes
-    if compressed:
-        public_key_bytes = (b'\x02' + vk.to_string()[:32] if vk.to_string()[-1] % 2 == 0 else b'\x03' + vk.to_string()[:32])
-    else:
-        public_key_bytes = b'\x04' + vk.to_string()
-
-    # Perform SHA-256 followed by RIPEMD-160
-    sha256_bpk = sha256(public_key_bytes).digest()
-    ripemd160_bpk = new('ripemd160', sha256_bpk).digest()
-
-    # Add version byte (0x00 for Bitcoin Mainnet)
-    versioned_payload = b'\x00' + ripemd160_bpk
-
-    # Calculate the checksum (double SHA-256 and take the first 4 bytes)
-    checksum = sha256(sha256(versioned_payload).digest()).digest()[:4]
-
-    # Combine the versioned payload and checksum
-    address_bytes = versioned_payload + checksum
-
-    # Encode the result in Base58Check format
-    bitcoin_address = base58.b58encode(address_bytes).decode()
-
-    return bitcoin_address
 
 
 # -------------- decorator

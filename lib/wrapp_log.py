@@ -9,6 +9,9 @@ from pathlib import Path
 from typing import Any, Dict, Iterator, TextIO
 
 
+__version__ = "0.25.12"
+
+
 ANSI_ESCAPE = re.compile(r"\x1b\[[0-?]*[ -/]*[@-~]")
 
 

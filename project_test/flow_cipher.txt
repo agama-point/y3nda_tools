@@ -1,0 +1,7 @@
+python test_cipher_caesar.py
+python test_cipher_fleissner.py 
+python test_cipher_polybius.py 
+python test_cipher_xor.py 
+python test_crypt_fernet.py 
+python test_crypt_fernet_file.py 
+python test_crypt_rsa.py 

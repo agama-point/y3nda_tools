@@ -9,6 +9,9 @@ from pathlib import Path
 from typing import Tuple, Union
 
 
+__version__ = "0.25.11"
+
+
 _ASSETS_DIR = Path(__file__).with_name("assets")
 
 

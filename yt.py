@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 """Main command-line entry point for the small y3nda cipher project.
 
 The command reads the project subdirectory from ``y3nda_config.json`` and
@@ -14,7 +15,9 @@ import re
 import sys
 from pathlib import Path
 
+from crypto_agama.agama_cipher import __version__ as AGAMA_CIPHER_VERSION
 from crypto_agama.agama_cipher import caesar_encrypt, p1, polybius_decrypt, toggle_xor
+from crypto_agama.agama_mnemonic import __version__ as AGAMA_MNEMONIC_VERSION
 from crypto_agama.agama_mnemonic import MNEMONIC_WORD_COLUMN_WIDTH, bip, cip, slip
 from crypto_agama.agama_transform_tools import (
     ASCII_LETTERS_RE,
@@ -23,14 +26,20 @@ from crypto_agama.agama_transform_tools import (
     hex_to_num,
     is_hex_text,
     is_valid_hex,
+    hexdump,
     num_to_bech,
     num_to_dice,
     num_to_hex,
     str_to_hex,
     to_leet_speak,
 )
+from crypto_agama.agama_transform_tools import __version__ as AGAMA_TRANSFORM_TOOLS_VERSION
 from lib.terminal import Terminal
+from lib.terminal import __version__ as TERMINAL_VERSION
 from lib.wrapp_log import console_log, get_project_directory, load_config
+from lib.wrapp_log import __version__ as WRAPP_LOG_VERSION
+from lib.wrapp_run import FlowError, FlowRunner
+from lib.wrapp_run import __version__ as WRAPP_RUN_VERSION
 
 
 PROJECT_ROOT = Path(__file__).resolve().parent
@@ -39,6 +48,30 @@ RESULT_LABEL_WIDTH = 8
 POLYBIUS_TEXT_RE = re.compile(r"^[A-Za-z]+$")
 POLYBIUS_NUMBERS_RE = re.compile(r"^[1-5]{2}(?:\s+[1-5]{2})*$")
 POLYBIUS_LETTERS = {coordinates: letter for letter, coordinates in p1.items()}
+MODULE_VERSIONS = (
+    ("agama_transform_tools", AGAMA_TRANSFORM_TOOLS_VERSION),
+    ("agama_mnemonic", AGAMA_MNEMONIC_VERSION),
+    ("agama_cipher", AGAMA_CIPHER_VERSION),
+    ("wrapp_log", WRAPP_LOG_VERSION),
+    ("wrapp_run", WRAPP_RUN_VERSION),
+    ("terminal", TERMINAL_VERSION),
+)
+VERSION_LABEL_WIDTH = max(len(name) for name, _version in MODULE_VERSIONS) + 1
+
+
+class VersionAction(argparse.Action):
+    """Print a colorized, aligned version overview."""
+
+    def __init__(self, option_strings, dest=argparse.SUPPRESS, default=argparse.SUPPRESS, help=None):
+        super().__init__(option_strings=option_strings, dest=dest, nargs=0, default=default, help=help)
+
+    def __call__(self, parser, namespace, values, option_string=None):
+        terminal = Terminal()
+        print(terminal.color("g", "yt.py {0} (Python 3.6+)".format(__version__)))
+        for name, version in MODULE_VERSIONS:
+            label = "{0}:".format(name).ljust(VERSION_LABEL_WIDTH)
+            print("{0} {1}".format(terminal.color("y", label), version))
+        parser.exit()
 
 
 def parse_args() -> argparse.Namespace:
@@ -46,13 +79,14 @@ def parse_args() -> argparse.Namespace:
 
     parser = argparse.ArgumentParser(
         description="Transform project text with the XOR, ROT13, Polybius, or leet cipher.",
+        formatter_class=argparse.RawTextHelpFormatter,
     )
     parser.add_argument(
         "-v",
         "--ver",
         "--version",
-        action="version",
-        version="%(prog)s {0} (Python 3.6+)".format(__version__),
+        action=VersionAction,
+        help="Show yt.py and submodule versions.",
     )
     parser.add_argument(
         "-c",
@@ -70,7 +104,7 @@ def parse_args() -> argparse.Namespace:
         "-s",
         "--status",
         action="store_true",
-        help="Show the values loaded from y3nda_config.json.",
+        help="Show the values loaded from yt.json.",
     )
     parser.add_argument(
         "-a",
@@ -79,15 +113,30 @@ def parse_args() -> argparse.Namespace:
         help="Try all applicable conversions on STRING or the project's data.txt.",
     )
     parser.add_argument(
+        "-d",
+        "--dump",
+        action="store_true",
+        help="Hexdump the configured working directory's data.txt.",
+    )
+    parser.add_argument(
         "-m",
         "--mnemonic",
         metavar="STRING",
         help="Look up a CIP, SLIP-0039, or BIP-0039 mnemonic word or zero-based index.",
     )
     parser.add_argument(
+        "-r",
+        "--run",
+        nargs="?",
+        const=Path("flow.txt"),
+        metavar="FILE",
+        type=Path,
+        help="Run FILE, or flow.txt by default, from the root or configured working directory.",
+    )
+    parser.add_argument(
         "--config",
         type=Path,
-        default=PROJECT_ROOT / "y3nda_config.json",
+        default=PROJECT_ROOT / "yt.json",
         help="Path to configuration JSON (default: %(default)s).",
     )
     return parser.parse_args()
@@ -124,7 +173,7 @@ def polybius_transform(value: str) -> str:
 def leet_transform(value: str) -> str:
     """Convert text with the full leetspeak mapping."""
 
-    return to_leet_speak(value, 3)
+    return to_leet_speak(value, 2)
 
 
 def read_data(data_path: Path) -> str:
@@ -244,6 +293,17 @@ def main() -> int:
             return 0
 
         try:
+            if args.run is not None:
+                flow_runner = FlowRunner(PROJECT_ROOT, flow_directories=(project_directory,))
+                flow_path = flow_runner.resolve_flow_path(args.run)
+                return flow_runner.run(flow_path, flow_runner.load(flow_path))
+            if args.dump:
+                try:
+                    data = (project_directory / "data.txt").read_bytes()
+                except OSError as error:
+                    raise ValueError(f"Cannot read data file {project_directory / 'data.txt'}: {error}") from error
+                hexdump(data)
+                return 0
             input_text = args.text if args.text is not None else read_data(project_directory / "data.txt")
             if args.all:
                 print_all_conversions(input_text, get_xor_key(project_directory / ".env"))
@@ -259,7 +319,7 @@ def main() -> int:
                 result = polybius_transform(input_text)
             else:
                 result = leet_transform(input_text)
-        except ValueError as error:
+        except (FlowError, ValueError) as error:
             print(f"Error: {error}", file=sys.stderr)
             return 1
 

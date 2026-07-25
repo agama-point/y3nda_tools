@@ -5,7 +5,7 @@ import secrets
 
 from crypto_agama.agama_transform_tools import BASE64_ASCII, is_hex_text
 
-__version__ = "0.3.0"
+__version__ = "0.26.06"
 
 
 """

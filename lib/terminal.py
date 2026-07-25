@@ -4,6 +4,10 @@ import os
 import sys
 from typing import Optional, TextIO
 
+
+__version__ = "0.23.05"
+
+
 RESET = "\033[0m"
 COLORS = {
     "r": "\033[31m",  # red
