@@ -1,0 +1,12 @@
+python3 yt.py -v
+
+python3 yt.py --status
+
+python3 yt.py -c rot13 "AGAMA"
+
+python3 yt.py -c polybius agama
+
+python3 yt.py -c leet
+
+python3 yt.py -d
+
