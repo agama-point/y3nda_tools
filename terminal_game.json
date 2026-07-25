@@ -1,0 +1,7 @@
+{
+  "width": 42,
+  "height": 15,
+  "snake": true,
+  "dot_count": 42,
+  "dot_symbol": "*"
+}
