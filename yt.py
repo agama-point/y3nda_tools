@@ -38,6 +38,8 @@ from lib.wrapp_terminal import Terminal
 from lib.wrapp_terminal import __version__ as WRAPP_TERMINAL_VERSION
 from lib.wrapp_network import print_network_info
 from lib.wrapp_network import __version__ as WRAPP_NETWORK_VERSION
+from lib.wrapp_system import print_system_info
+from lib.wrapp_system import __version__ as WRAPP_SYSTEM_VERSION
 from lib.wrapp_log import console_log, get_project_directory, load_config
 from lib.wrapp_log import __version__ as WRAPP_LOG_VERSION
 from lib.wrapp_run import FlowError, FlowRunner
@@ -45,7 +47,7 @@ from lib.wrapp_run import __version__ as WRAPP_RUN_VERSION
 
 
 PROJECT_ROOT = Path(__file__).resolve().parent
-__version__ = "0.2"
+__version__ = "0.3"
 RESULT_LABEL_WIDTH = 8
 POLYBIUS_TEXT_RE = re.compile(r"^[A-Za-z]+$")
 POLYBIUS_NUMBERS_RE = re.compile(r"^[1-5]{2}(?:\s+[1-5]{2})*$")
@@ -58,6 +60,7 @@ MODULE_VERSIONS = (
     ("wrapp_run", WRAPP_RUN_VERSION),
     ("wrapp_terminal", WRAPP_TERMINAL_VERSION),
     ("wrapp_network", WRAPP_NETWORK_VERSION),
+    ("wrapp_system", WRAPP_SYSTEM_VERSION),
 )
 VERSION_LABEL_WIDTH = max(len(name) for name, _version in MODULE_VERSIONS) + 1
 
@@ -70,10 +73,10 @@ class VersionAction(argparse.Action):
 
     def __call__(self, parser, namespace, values, option_string=None):
         terminal = Terminal()
-        print(terminal.color("g", "yt.py {0} (Python 3.6+)".format(__version__)))
+        print(terminal.color("y", "yt.py {0} (Python 3.6+)".format(__version__)))
         for name, version in MODULE_VERSIONS:
             label = "{0}:".format(name).ljust(VERSION_LABEL_WIDTH)
-            print("{0} {1}".format(terminal.color("y", label), version))
+            print("{0} {1}".format(terminal.color("g", label), version))
         parser.exit()
 
 
@@ -107,7 +110,7 @@ def parse_args() -> argparse.Namespace:
         "-s",
         "--status",
         action="store_true",
-        help="Show the values loaded from yt.json.",
+        help="Show project configuration and local system information.",
     )
     parser.add_argument(
         "-a",
@@ -300,8 +303,12 @@ def main() -> int:
 
     with console_log(project_directory, Path(__file__).name, bool(config["log"])):
         if args.status:
-            print(json.dumps(config, indent=2, ensure_ascii=False))
-            print(f"Project directory: {project_directory}")
+            terminal = Terminal()
+            print(terminal.color("y", "Project status"))
+            print("{0} {1}".format(terminal.color("g", "Configuration:"), json.dumps(config, ensure_ascii=False)))
+            print("{0} {1}".format(terminal.color("g", "Project directory:"), project_directory))
+            print()
+            print_system_info(project_directory)
             return 0
 
         try:

@@ -65,13 +65,18 @@ def print_network_info() -> None:
     """Print local IPv4, an HTTPS internet check, and one ICMP ping result."""
 
     terminal = Terminal()
-    print(terminal.color("g", "Network information"))
-    print("Local IPv4: {0}".format(get_local_ipv4()))
+    print(terminal.color("y", "Network information"))
+    print("{0} {1}".format(terminal.color("g", "Local IPv4:"), get_local_ipv4()))
     internet_available = check_internet()
     internet_state = "available" if internet_available else "unavailable"
     internet_color = "g" if internet_available else "r"
-    print("Internet (HTTPS): {0}".format(terminal.color(internet_color, internet_state)))
+    print("{0} {1}".format(terminal.color("g", "Internet (HTTPS):"), terminal.color(internet_color, internet_state)))
     reachable = ping_once(DEFAULT_PING_HOST)
     ping_state = "reply received" if reachable else "no ICMP reply"
     ping_color = "g" if reachable else "y"
-    print("Ping {0} (ICMP): {1}".format(DEFAULT_PING_HOST, terminal.color(ping_color, ping_state)))
+    print(
+        "{0} {1}".format(
+            terminal.color("g", "Ping {0} (ICMP):".format(DEFAULT_PING_HOST)),
+            terminal.color(ping_color, ping_state),
+        )
+    )
