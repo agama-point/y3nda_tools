@@ -34,8 +34,8 @@ from crypto_agama.agama_transform_tools import (
     to_leet_speak,
 )
 from crypto_agama.agama_transform_tools import __version__ as AGAMA_TRANSFORM_TOOLS_VERSION
-from lib.terminal import Terminal
-from lib.terminal import __version__ as TERMINAL_VERSION
+from lib.wrapp_terminal import Terminal
+from lib.wrapp_terminal import __version__ as TERMINAL_VERSION
 from lib.wrapp_log import console_log, get_project_directory, load_config
 from lib.wrapp_log import __version__ as WRAPP_LOG_VERSION
 from lib.wrapp_run import FlowError, FlowRunner

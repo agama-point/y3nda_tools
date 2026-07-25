@@ -8,7 +8,7 @@ from typing import Dict
 
 from dotenv import dotenv_values, set_key
 
-from lib.terminal import Terminal
+from lib.wrapp_terminal import Terminal
 from lib.wrapp_log import console_log, get_project_directory, load_config
 
 PROJECT_ROOT = Path(__file__).resolve().parent
