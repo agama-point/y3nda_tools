@@ -1,6 +1,6 @@
 """A minimal interactive menu for reading and saving a .env file."""
 
-import argparse
+from argparse import ArgumentParser, Namespace
 import re
 import sys
 from pathlib import Path
@@ -15,8 +15,10 @@ PROJECT_ROOT = Path(__file__).resolve().parent
 VALID_KEY = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 
 
-def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Interactively edit a .env file.")
+def parse_args() -> Namespace:
+    """Parse command-line options (compatible with Python 3.6)."""
+
+    parser = ArgumentParser(description="Interactively edit a .env file.")
     parser.add_argument(
         "--config",
         type=Path,
