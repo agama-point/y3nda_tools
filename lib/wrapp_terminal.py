@@ -7,7 +7,7 @@ import sys
 from typing import Optional, TextIO
 
 
-__version__ = "0.23.09"
+__version__ = "0.23.10"
 
 
 RESET = "\033[0m"
@@ -150,6 +150,11 @@ class Terminal:
     def __init__(self, file: Optional[TextIO] = None) -> None:
         self._file = file
 
+    def cls(self) -> None:
+        """Clear the terminal screen on Windows, Linux, and macOS."""
+
+        os.system("cls" if os.name == "nt" else "clear")
+
     def print(
         self,
         color: str,
@@ -231,6 +236,10 @@ class Terminal:
         """Print in bright magenta/violet."""
 
         self.print("v", *values, **kwargs)
+
+
+# Lowercase alias for the original short usage: ``t = terminal()``.
+terminal = Terminal
 
 
 def r(*values: object, **kwargs: object) -> None:
