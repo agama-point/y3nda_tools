@@ -4,6 +4,7 @@ import os
 import re
 import shutil
 import sys
+from time import sleep
 from typing import Optional, TextIO
 
 
@@ -50,6 +51,7 @@ BACKGROUND_COLORS = {
 
 ANSI_ESCAPE_RE = re.compile(r"\x1b\[[0-?]*[ -/]*[@-~]")
 SPINNER_FRAMES = "|/-\\"
+TYPEWRITER_DELAY = 0.1
 
 
 def _enable_windows_ansi(stream: TextIO) -> bool:
@@ -167,6 +169,23 @@ class Terminal:
         output = self._file or sys.stdout
         text = sep.join(str(value) for value in values)
         print(color_text(text, color, enabled=colors_enabled(output)), end=end, file=output)
+
+    def tw(self, color: str, text: object) -> None:
+        """Print ``text`` one character at a time in the requested color.
+
+        Each character is written immediately, producing a typewriter effect
+        with a 0.1 second delay between characters.
+        """
+
+        output = self._file or sys.stdout
+        use_colors = colors_enabled(output)
+        _resolve_color(color)
+        for character in str(text):
+            output.write(color_text(character, color, enabled=use_colors))
+            output.flush()
+            sleep(TYPEWRITER_DELAY)
+        output.write("\n")
+        output.flush()
 
     def color(self, color: str, text: object) -> str:
         """Return one piece of text in color for use inside a longer line."""
