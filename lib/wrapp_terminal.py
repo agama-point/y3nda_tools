@@ -238,10 +238,6 @@ class Terminal:
         self.print("v", *values, **kwargs)
 
 
-# Lowercase alias for the original short usage: ``t = terminal()``.
-terminal = Terminal
-
-
 def r(*values: object, **kwargs: object) -> None:
     """Print in red."""
 

@@ -75,6 +75,12 @@ class TerminalTests(unittest.TestCase):
     def test_terminal_width_is_positive(self) -> None:
         self.assertGreaterEqual(terminal_width(), 1)
 
+    def test_terminal_cls_uses_the_platform_clear_command(self) -> None:
+        with patch("lib.wrapp_terminal.os.system") as clear:
+            Terminal().cls()
+
+        clear.assert_called_once_with("cls" if __import__("os").name == "nt" else "clear")
+
     def test_status_line_falls_back_to_a_regular_line(self) -> None:
         output = io.StringIO()
         with patch("lib.wrapp_terminal.sys.stdout", output):
