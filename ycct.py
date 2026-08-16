@@ -112,7 +112,7 @@ def parse_args() -> argparse.Namespace:
         "text",
         nargs="?",
         metavar="STRING",
-        help="Text for the selected cipher. If omitted, the configured project's data.txt is used.",
+        help="Text for the selected cipher. XOR also reads an existing .hex file; if omitted, data.txt is used.",
     )
     parser.add_argument(
         "-s",
@@ -222,6 +222,31 @@ def get_xor_key(env_path: Path) -> str:
     if not isinstance(key, str) or not is_valid_hex(key):
         raise ValueError(f"XEY_HEX must be a non-empty, even-length hexadecimal key in {env_path}")
     return key
+
+
+def read_xor_input(value: str, project_directory: Path) -> str:
+    """Read an existing .hex file for XOR, or retain ``value`` as literal text.
+
+    A bare filename is resolved in the configured project directory. Paths
+    containing a directory component remain relative to the current directory,
+    matching the command-line path convention used by the project tools.
+    """
+
+    candidate = Path(value)
+    if candidate.suffix.lower() != ".hex":
+        return value
+    if not candidate.is_absolute() and candidate.parent == Path("."):
+        candidate = project_directory / candidate
+    if not candidate.is_file():
+        return value
+
+    try:
+        hex_data = candidate.read_text(encoding="utf-8").strip()
+    except OSError as error:
+        raise ValueError("Cannot read hexadecimal input file {0}: {1}".format(candidate, error)) from error
+    if not is_valid_hex(hex_data):
+        raise ValueError("Hexadecimal input file must contain a non-empty, even-length hex value: {0}".format(candidate))
+    return hex_data
 
 
 def print_conversion(t: Terminal, label: str, value: object) -> None:
@@ -367,7 +392,8 @@ def main() -> int:
                 return 2
             if args.cipher == "xor":
                 print_verbose(args, "Applying XOR transformation.")
-                result = toggle_xor(input_text, get_xor_key(project_directory / ".env"))
+                xor_input = read_xor_input(input_text, project_directory)
+                result = toggle_xor(xor_input, get_xor_key(project_directory / ".env"))
             elif args.cipher == "rot13":
                 print_verbose(args, "Applying ROT13 transformation.")
                 result = rot13(input_text)

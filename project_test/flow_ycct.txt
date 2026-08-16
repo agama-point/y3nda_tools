@@ -1,0 +1,19 @@
+# YCCT version and local environment overview.
+python ycct.py -V
+python ycct.py --status
+python ycct.py --net
+
+# Cipher and conversion examples. Verbose output is enabled with -v.
+python ycct.py -v -c rot13 AGAMA
+python ycct.py -c polybius agama
+python ycct.py -c polybius "11 22 11 32 11"
+python ycct.py -c leet "Hello y3nda"
+python ycct.py -c xor "tajny text"
+python ycct.py -a agama
+python ycct.py -a 6d794588f05853bca0b50a01971c507b
+
+# Mnemonic lookup and configured data file inspection.
+python ycct.py -m tulip
+python ycct.py -m 111
+python ycct.py -d
+

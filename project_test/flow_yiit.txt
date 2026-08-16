@@ -1,0 +1,18 @@
+# Create a 16x16 RGB carrier and add strong noise to every channel before embedding data.
+python yiit.py create yiit_flow.png 16x16
+python yiit.py noise yiit_flow.png --channel R --range 128
+python yiit.py noise yiit_flow.png --channel G --range 128
+python yiit.py noise yiit_flow.png --channel B --range 128
+
+# The 21-byte UTF-8 payload occupies 168 parity bits in the red channel.
+python yiit.py embed yiit_flow.png "AgamaPoint-Infiltrate" --text --x 0 --y 0 --channel R
+
+# Embed a 128-bit hexadecimal literal independently in the blue channel.
+python yiit.py embed yiit_flow.png 0x6f764b87fe0317bbf484626fb5227f4f --x 0 --y 0 --channel B
+
+# Verbose red-channel extraction prints hexadecimal data and decoded UTF-8 text.
+python yiit.py -v extract yiit_flow.png --x 0 --y 0 --length 168 --channel R --out-hex project_test/yiit_flow.hex
+python yiit.py -v extract yiit_flow.png --x 0 --y 0 --length 168 --channel R --out-txt project_test/yiit_flow.txt
+
+# The blue payload is binary data, so retain its extracted hexadecimal form.
+python yiit.py -v extract yiit_flow.png --x 0 --y 0 --length 128 --channel B --out-hex project_test/yiit_flow_blue.hex

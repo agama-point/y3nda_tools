@@ -1,3 +1,3 @@
-python yt.py -m tulip
-python yt.py -m 111
+python ycct.py -m tulip
+python ycct.py -m 111
 

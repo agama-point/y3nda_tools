@@ -174,7 +174,7 @@ def resolve_command_paths(args, project_directory):
 
 
 def resolve_embed_source(args, project_directory):
-    """Choose an existing hexadecimal file or literal UTF-8 text for embed."""
+    """Choose a hexadecimal file, ``0x`` literal, or UTF-8 text for embed."""
 
     if args.text:
         return args.data, "text"
@@ -184,6 +184,15 @@ def resolve_embed_source(args, project_directory):
         if not candidate.is_file():
             raise YiitError("Cannot read hexadecimal input file: {0}".format(candidate))
         return candidate, "hex-file"
+    if args.data.lower().startswith("0x"):
+        hex_data = args.data[2:]
+        if not hex_data:
+            raise YiitError("Hexadecimal literal must contain at least one digit after 0x.")
+        try:
+            int(hex_data, 16)
+        except ValueError as error:
+            raise YiitError("Hexadecimal literal contains invalid data: {0}".format(args.data)) from error
+        return hex_data, "hex-string"
     if candidate.is_file():
         return candidate, "hex-file"
     return args.data, "text"
@@ -234,7 +243,7 @@ def add_border(filename, thickness, color):
 
 
 def embed_binary(filename, data, x, y, channel_name, source_type):
-    """Embed hexadecimal-file data or literal text in one RGB channel."""
+    """Embed hexadecimal-file data, a hexadecimal literal, or text in one channel."""
 
     if source_type == "hex-file":
         try:
@@ -247,6 +256,8 @@ def embed_binary(filename, data, x, y, channel_name, source_type):
             binary_data = bin(int(hex_data, 16))[2:].zfill(len(hex_data) * 4)
         except ValueError as error:
             raise YiitError("Hexadecimal input file contains invalid data: {0}".format(data)) from error
+    elif source_type == "hex-string":
+        binary_data = bin(int(data, 16))[2:].zfill(len(data) * 4)
     else:
         text_data = str(data)
         if not text_data:
@@ -335,6 +346,7 @@ def print_examples():
     print("  python yiit.py info image.png")
     print("  python yiit.py noise image.png --channel R --range 10")
     print("  python yiit.py embed image.png data/hex.txt --x 0 --y 0 --channel R")
+    print("  python yiit.py embed image.png 0x0F --x 0 --y 0 --channel R")
     print("  python yiit.py embed image.png \"text data\" --x 0 --y 0 --channel R")
     print("  python yiit.py extract image.png --x 0 --y 0 --length 128 --channel R")
     print("  python ./yiit.py embed image.png \"test 123 567\" --x 0 --y 0 --channel R")
@@ -418,7 +430,9 @@ def parse_args():
     add_verbose_argument(embed_parser, default=argparse.SUPPRESS)
     embed_parser.add_argument("filename", metavar="IMAGE", help="Image filename to modify.")
     embed_parser.add_argument(
-        "data", metavar="HEX_FILE_OR_TEXT", help="Existing hex file, or UTF-8 text to embed."
+        "data",
+        metavar="HEX_FILE_OR_TEXT",
+        help="Existing hex file, 0x-prefixed hexadecimal literal, or UTF-8 text to embed.",
     )
     source_group = embed_parser.add_mutually_exclusive_group()
     source_group.add_argument("--text", action="store_true", help="Always treat HEX_FILE_OR_TEXT as literal UTF-8 text.")
@@ -520,7 +534,12 @@ def main():
         resolved_paths = resolve_command_paths(args, project_directory)
         if args.command in ("embed", "ibin"):
             args.data, args.embed_source_type = resolve_embed_source(args, project_directory)
-            resolved_paths["data"] = args.data if args.embed_source_type == "hex-file" else "<literal UTF-8 text>"
+            if args.embed_source_type == "hex-file":
+                resolved_paths["data"] = args.data
+            elif args.embed_source_type == "hex-string":
+                resolved_paths["data"] = "<literal hexadecimal>"
+            else:
+                resolved_paths["data"] = "<literal UTF-8 text>"
     except (ValueError, YiitError) as error:
         print("Error: {0}".format(error), file=sys.stderr)
         return 1

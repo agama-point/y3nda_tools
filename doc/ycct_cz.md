@@ -78,10 +78,16 @@ XEY_HEX=deadbeef
 
 ```powershell
 python .\ycct.py -c xor "tajny text"
+python .\ycct.py -c xor .\project_test\ciphertext.hex
 ```
 
 Stejná operace se stejným klíčem slouží také k obrácení výsledku. Klíč ani
 soubor `.env` neukládejte do veřejného repozitáře.
+
+Existující soubor s příponou `.hex` se načte jako hexadecimální vstup (holý
+název se hledá v pracovním adresáři z `yt.json`). Jeho obsah musí být neprázdný
+a mít sudý počet hexadecimálních znaků. Neexistující `něco.hex` se nadále
+zpracuje jako obyčejný text.
 
 ## Všechny vhodné převody
 
@@ -120,6 +126,10 @@ python .\ycct.py --status
 python .\ycct.py --config .\moje_konfigurace.json --status
 ```
 
+Stavový výpis obsahuje konfiguraci a pracovní adresář, dále název a stručný
+popis počítače, operační systém, verzi běžícího Pythonu, celkovou paměť a
+celkovou i volnou kapacitu disku pracovního adresáře.
+
 Volba `-d` zobrazí hexadecimální výpis souboru `data.txt` pracovního adresáře:
 
 ```powershell
@@ -134,7 +144,15 @@ kořeni projektu nebo v pracovním adresáři; cestu lze předat přímo.
 ```powershell
 python .\ycct.py -r
 python .\ycct.py -r .\project_test\flow_cipher.txt
+python .\runner.py .\project_test\flow_ycct.txt
 ```
+
+Samostatný `runner.py` přijímá stejný název flow souboru a také `--dry-run`.
+Podrobnosti o aktuálním `yt.json`, pracovním adresáři a pořadí hledání souborů
+zobrazí `python .\runner.py -h`.
+
+Aktuální ukázka `project_test/flow_ycct.txt` ověřuje verze, status, síť,
+převody, mnemonic i hexdump pomocí `ycct.py`.
 
 ## Informace o prostředí
 

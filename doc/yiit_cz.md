@@ -97,7 +97,14 @@ python .\yiit.py noise carrier.png --channel G --range 5
 ```
 
 Kanály lze zapisovat malými i velkými písmeny: `R`, `G`, `B`. Starší názvy
-`-f` a `--fill` jsou zachované jako alias pro `--range`.
+`-f` a `--fill` jsou zachované jako alias pro `--range`. Jeden příkaz upraví
+vždy jen jeden kanál; pro šum ve všech třech kanálech spusťte příkaz třikrát:
+
+```powershell
+python .\yiit.py noise carrier.png --channel R --range 128
+python .\yiit.py noise carrier.png --channel G --range 128
+python .\yiit.py noise carrier.png --channel B --range 128
+```
 
 ### `border`
 
@@ -140,7 +147,14 @@ python .\yiit.py embed carrier.png "pokusný text do dat" --x 0 --y 0 --channel 
 Pokud druhý argument odkazuje na existující soubor, Yiit jej automaticky čte
 jako hexadecimální vstup. Neexistující cesta se vyhodnotí jako text. Volbou
 `--text` lze text vynutit i v případě, že stejnojmenný soubor existuje;
-`--hex-file` naopak vyžaduje existující hexadecimální soubor.
+`--hex-file` naopak vyžaduje existující hexadecimální soubor. Literál se
+prefixem `0x` nebo `0X` se vloží přímo jako hexadecimální data; délka se
+zachová po čtyřech bitech na každou hexadecimální číslici. Například `0xABC`
+zabere 12 bitů, nikoli tři znaky UTF-8:
+
+```powershell
+python .\yiit.py embed carrier.png 0xABC --x 0 --y 0 --channel B
+```
 
 ### Vytažení (`extract`)
 
@@ -152,8 +166,47 @@ python .\yiit.py extract carrier.png --x 0 --y 0 --length 8 --channel R
 ```
 
 `--length` je počet bitů, nikoli počet hexadecimálních znaků. Výchozí délka
-je 32 bitů. Původní názvy `ibin` a `pbin` fungují jako aliasy pro `embed` a
+je 32 bitů. Pro hexadecimální payload použijte počet číslic krát čtyři: například
+`0xABC` vyžaduje `--length 12`, 32 číslic vyžaduje `--length 128`. Při delším
+čtení se načtou i další paritní bity obrazu (často se projeví jako přípona
+`00`). Původní názvy `ibin` a `pbin` fungují jako aliasy pro `embed` a
 `extract`; zachované jsou také krátké volby `-x`, `-y` a `-l`.
+
+Volba `--out-hex FILE` uloží stejný hexadecimální text, který `extract`
+vypisuje na obrazovku — tedy formát vhodný jako zpětný vstup pro `embed`:
+
+```powershell
+python .\yiit.py extract carrier.png --length 128 --channel R --out-hex data\recovered.hex
+python .\yiit.py embed another.png data\recovered.hex --channel R
+```
+
+Volba `--out-txt FILE` uloží dekódovaný UTF-8 text. Vyžaduje délku násobku
+osmi bitů a platné UTF-8; při binárních datech raději skončí chybou, než aby
+uložila poškozený text:
+
+```powershell
+python .\yiit.py -v extract image.png --length 128 --channel R --out-txt output_ascii.txt
+```
+
+Původní `--out FILE` zůstává jako automatická zpětně kompatibilní volba:
+bez `-v` uloží hex, s `-v` při platném UTF-8 uloží text. Pro nové skripty
+jsou jednoznačnější `--out-txt` a `--out-hex`. Holý název výstupního souboru
+se stejně jako ostatní soubory uloží do `project_test`; cestou s adresářem jej
+lze uložit jinam.
+
+## Ukázkové flow
+
+`project_test/flow_yiit.txt` je úplná ukázka pro `runner.py`. Vytvoří obrázek
+16×16, přidá šum v rozsahu 128 do všech RGB kanálů, do R vloží text
+`AgamaPoint-Infiltrate` a do B 128bitový hexadecimální literál. Oba payloady
+pak extrahuje s `-v` do hexadecimálního i textového výstupu:
+
+```powershell
+python .\runner.py .\project_test\flow_yiit.txt
+```
+
+Podrobnosti o aktuálním `yt.json`, pracovním adresáři a pořadí hledání flow
+souborů vypíše `python .\runner.py -h`.
 
 ## Informace o obrázku
 
@@ -199,6 +252,6 @@ python .\yiit.py extract carrier.png -v --length 128 --channel R
 | `copy SOURCE DESTINATION` | zkopíruje nebo zvětší obrázek | ne |
 | `noise IMAGE` | přidá náhodnou změnu do kanálu | ano |
 | `border IMAGE` | nakreslí barevný okraj | ano |
-| `embed IMAGE HEX_FILE_OR_TEXT` | vloží hex data ze souboru nebo UTF-8 text | ano |
+| `embed IMAGE HEX_FILE_OR_TEXT` | vloží hex data ze souboru, literál `0x…` nebo UTF-8 text | ano |
 | `extract IMAGE` | načte bity a vypíše hex | ne |
 | `info IMAGE` | zobrazí metadata a kontrolní součty | ne |
