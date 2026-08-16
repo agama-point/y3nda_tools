@@ -158,13 +158,16 @@ def resolve_command_paths(args, project_directory):
         "bord": ("filename",),
         "embed": ("filename",),
         "ibin": ("filename",),
-        "extract": ("filename",),
-        "pbin": ("filename",),
+        "extract": ("filename", "output"),
+        "pbin": ("filename", "output"),
         "info": ("filename",),
     }
     resolved = {}
     for name in path_names.get(args.command, ()):
-        path = resolve_working_path(getattr(args, name), project_directory)
+        value = getattr(args, name, None)
+        if value is None:
+            continue
+        path = resolve_working_path(value, project_directory)
         setattr(args, name, path)
         resolved[name] = path
     return resolved
@@ -258,8 +261,8 @@ def embed_binary(filename, data, x, y, channel_name, source_type):
     image.save(filename)
 
 
-def extract_binary(filename, x, y, length, channel_name, verbose):
-    """Extract parity bits and optionally show their UTF-8 interpretation."""
+def extract_binary(filename, x, y, length, channel_name, verbose, output=None, output_text=None, output_hex=None):
+    """Extract parity bits, optionally decode them, and optionally save them."""
 
     image = get_image21()()
     image.load(filename)
@@ -268,20 +271,49 @@ def extract_binary(filename, x, y, length, channel_name, verbose):
         raise YiitError("No data can be read from the selected position.")
     hex_data = "{0:X}".format(int(binary_data, 2)).zfill((length + 3) // 4)
     print(hex_data)
+    decoded_text = None
+    decode_error = None
+    if len(binary_data) % 8:
+        decode_error = "UTF-8 decoding requires a bit length divisible by 8."
+    else:
+        raw_bytes = int(binary_data, 2).to_bytes(len(binary_data) // 8, byteorder="big")
+        try:
+            decoded_text = raw_bytes.rstrip(b"\x00").decode("utf-8")
+        except UnicodeDecodeError:
+            decode_error = "extracted data is not valid UTF-8 text."
+
+    if output_text is not None and decoded_text is None:
+        raise YiitError("--out-txt requires extracted data that is valid, byte-aligned UTF-8 text.")
+
+    if output_text is not None:
+        output_target = output_text
+        output_data = decoded_text
+        output_kind = "decoded UTF-8 text"
+    elif output_hex is not None:
+        output_target = output_hex
+        output_data = hex_data
+        output_kind = "hexadecimal data"
+    elif output is not None:
+        output_target = output
+        if verbose and decoded_text is not None:
+            output_data = decoded_text
+            output_kind = "decoded UTF-8 text"
+        else:
+            output_data = hex_data
+            output_kind = "hexadecimal data"
+    else:
+        output_target = None
+
+    if output_target is not None:
+        Path(output_target).parent.mkdir(parents=True, exist_ok=True)
+        Path(output_target).write_text(output_data, encoding="utf-8")
+        if verbose:
+            print("Verbose: saved {0}: {1}".format(output_kind, output_target), file=sys.stderr)
+
     if not verbose:
         return
-    if len(binary_data) % 8:
-        print(
-            "Verbose: UTF-8 decoding requires a bit length divisible by 8.",
-            file=sys.stderr,
-        )
-        return
-
-    raw_bytes = int(binary_data, 2).to_bytes(len(binary_data) // 8, byteorder="big")
-    try:
-        decoded_text = raw_bytes.rstrip(b"\x00").decode("utf-8")
-    except UnicodeDecodeError:
-        print("Verbose: extracted data is not valid UTF-8 text.", file=sys.stderr)
+    if decode_error:
+        print("Verbose: {0}".format(decode_error), file=sys.stderr)
         return
     print("Verbose: decoded UTF-8 text: {0}".format(decoded_text), file=sys.stderr)
 
@@ -307,6 +339,8 @@ def print_examples():
     print("  python yiit.py extract image.png --x 0 --y 0 --length 128 --channel R")
     print("  python ./yiit.py embed image.png \"test 123 567\" --x 0 --y 0 --channel R")
     print("  python ./yiit.py -v extract image.png --length 128 --channel R")
+    print("  python ./yiit.py -v extract image.png --length 128 --channel R --out-txt output_ascii.txt")
+    print("  python ./yiit.py extract image.png --length 128 --channel R --out-hex recovered.hex")
 
 
 def add_verbose_argument(parser, default):
@@ -407,8 +441,37 @@ def parse_args():
     extract_parser.add_argument("-y", "--y", type=non_negative_int, default=0, help="Starting Y coordinate (default: 0).")
     extract_parser.add_argument("-l", "--length", type=positive_int, default=32, help="Number of bits to read (default: 32).")
     extract_parser.add_argument("-c", "--channel", type=channel, default="R", help="RGB channel (default: R).")
+    output_group = extract_parser.add_mutually_exclusive_group()
+    output_group.add_argument(
+        "--out-txt",
+        dest="output_text",
+        metavar="FILE",
+        help="Save decoded UTF-8 text; fails when the extracted data is not UTF-8 text.",
+    )
+    output_group.add_argument(
+        "--out-hex",
+        dest="output_hex",
+        metavar="FILE",
+        help="Save extracted data as hexadecimal text, suitable for embed.",
+    )
+    output_group.add_argument(
+        "--out",
+        dest="output",
+        metavar="FILE",
+        help="Legacy automatic output: hexadecimal, or decoded UTF-8 text with -v.",
+    )
     extract_parser.set_defaults(
-        handler=lambda args: extract_binary(args.filename, args.x, args.y, args.length, args.channel, args.verbose)
+        handler=lambda args: extract_binary(
+            args.filename,
+            args.x,
+            args.y,
+            args.length,
+            args.channel,
+            args.verbose,
+            args.output,
+            args.output_text,
+            args.output_hex,
+        )
     )
 
     info_parser = subparsers.add_parser("info", help="Show image size and checksums.")
