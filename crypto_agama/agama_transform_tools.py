@@ -7,7 +7,7 @@ crypto_agama/agama_transform_tools 2016-25
 from math import ceil
 from hashlib import sha256, new
 import binascii, zlib
-import base58, base64
+import base64
 import re
 try:
     import ecdsa
@@ -16,7 +16,7 @@ except ImportError:
 # import string
 
 
-__version__ = "0.25.01"
+__version__ = "0.25.02"
 
 DEBUG = False
 
@@ -97,11 +97,21 @@ def hash_sha256_str(string):
 
 
 def convert_to_base58(num):
+    """Encode a non-negative integer using the Bitcoin Base58 alphabet.
+
+    The project uses Base58 only for integer output, so this compact encoder
+    keeps that conversion local and avoids a dependency on the ``base58``
+    package.  Zero intentionally remains an empty string to preserve the
+    function's existing behaviour.
+    """
+
+    if isinstance(num, bool) or not isinstance(num, int) or num < 0:
+        raise ValueError("num must be a non-negative integer")
+
     sb = ''
-    while (num > 0):
-        r = num % 58   # divide by 58 and gives the remainder
-        sb = sb + BASE_58_CHARS[r]
-        num = num // 58
+    while num > 0:
+        num, remainder = divmod(num, BASE_58_CHARS_LEN)
+        sb += BASE_58_CHARS[remainder]
     return sb[::-1]
 
 

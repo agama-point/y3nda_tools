@@ -8,7 +8,7 @@ from time import sleep
 from typing import Optional, TextIO
 
 
-__version__ = "0.23.10"
+__version__ = "0.23.11"
 
 
 RESET = "\033[0m"
